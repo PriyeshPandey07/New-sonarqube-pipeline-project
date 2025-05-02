@@ -40,7 +40,7 @@ pipeline {
         }
         stage('OWASP Scan') {
             steps {
-                dir('src/frontend') { 
+                dir('Sonarfolder/') { 
                      catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
                     dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-CHECK'
                     dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
@@ -50,7 +50,7 @@ pipeline {
         }
         stage('TrivyFScan') {
             steps {
-                dir('src/frontend') {
+                dir('Sonarfolder/') {
                     sh 'trivy fs . > trivyfs.txt'
                 }
             }
@@ -58,7 +58,7 @@ pipeline {
         stage("Image Create") {
             steps {
                 script {
-                    dir('src/frontend') {
+                    dir('Sonarfolder/') {
                             sh 'docker build -t eventsonarci .'
                     }
                 }
