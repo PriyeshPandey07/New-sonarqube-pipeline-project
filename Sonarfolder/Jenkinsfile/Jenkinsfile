@@ -1,0 +1,84 @@
+pipeline {
+    agent {
+        label 'agent'
+    }
+    tools {
+        jdk 'JDK'
+        nodejs 'nodejs'
+    }
+    environment  {
+        SCANNER_HOME=tool 'sonar-scanner'
+    }
+    stages {
+        stage('Cleaning Workspace') {
+            steps {
+                cleanWs()
+            }
+        }
+        stage('Checkout from Git') {
+            steps {
+                git credentialsId:'git-priyesh' ,url:'https://github.com/PriyeshPandey07/New-sonarqube-pipeline-project.git',branch:'main'
+            }
+        }
+        stage('Sonarqube Analysis') {
+            steps {
+                dir('the_eventor') {
+                    withSonarQubeEnv('sonar-scanner') {
+                        sh ''' $SCANNER_HOME/bin/sonar-scanner \
+                        -Dsonar.projectName=eventsonar \
+                        -Dsonar.projectKey=eventsonar '''
+                    }
+                }
+            }
+        }
+        stage('QualityGate') {
+            steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token' 
+                }
+            }
+        }
+        stage('OWASP Scan') {
+            steps {
+                dir('src/frontend') { 
+                     catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                    dependencyCheck additionalArguments: '--scan ./ --disableYarnAudit --disableNodeAudit', odcInstallation: 'DP-CHECK'
+                    dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+                    }
+                }
+            }
+        }
+        stage('TrivyFScan') {
+            steps {
+                dir('src/frontend') {
+                    sh 'trivy fs . > trivyfs.txt'
+                }
+            }
+        }
+        stage("Image Create") {
+            steps {
+                script {
+                    dir('src/frontend') {
+                            sh 'docker build -t eventsonarci .'
+                    }
+                }
+            }
+        }
+        stage("ImagePush") {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'docker-priyesh', usernameVariable: 'docker_user', passwordVariable: 'docker_pass')]) {
+                    sh "docker tag eventsonarci ${env.docker_user}/eventsonarci:${BUILD_NUMBER}"
+                    sh "docker login -u ${env.docker_user} -p ${env.docker_pass}"
+                    sh "docker push ${env.docker_user}/eventsonarci:${BUILD_NUMBER}"
+                    }
+                }
+            }
+        }
+        stage("ImageScan") {
+            steps {
+                sh 'trivy image priyeshpandey07/eventsonarci:${BUILD_NUMBER} > trivyimage_${BUILD_NUMBER}.txt' 
+            }
+        }
+    }
+}
