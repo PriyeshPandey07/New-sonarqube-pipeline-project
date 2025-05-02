@@ -1,0 +1,61 @@
+pipeline {
+    agent any
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main', url: 'https://github.com/Kushal-Singwani/the_eventor.git'
+            }
+        }
+        stage('Install & Migrate') {
+            steps {
+                sh '''
+                    python3 -m venv kushalenv
+                    kushalenv/bin/pip install --upgrade pip
+                    kushalenv/bin/pip install -r requirements.txt
+                    kushalenv/bin/python manage.py makemigrations || true
+                    kushalenv/bin/python manage.py migrate || true
+                    python manage.py loaddata initial_data.json || true
+                '''
+            }
+        }
+        stage('Create Image') {
+            steps {
+                sh '''
+                    docker build -t the_eventor .
+                '''
+            }
+        }
+        stage('Login to Docker Hub') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'docker', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                    sh '''
+                        echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                    '''
+                }
+            }
+        }
+        stage('Tagging Image') {
+            steps {
+                sh '''
+                    docker tag the_eventor kushalsingwani12/the_eventor:latest
+                '''
+            }
+        }
+        stage('Push Image') {
+            steps {
+                sh '''
+                    docker push kushalsingwani12/the_eventor:latest
+                '''
+            }
+        }
+         stage('Run Server') {
+            steps {
+                sh '''
+                    nohup kushalenv/bin/python manage.py runserver 0.0.0.0:5000
+                '''
+            }
+        }
+    }
+}
+
+
