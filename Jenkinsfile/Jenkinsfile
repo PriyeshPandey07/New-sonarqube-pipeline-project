@@ -3,7 +3,7 @@ pipeline {
         label 'agent'
     }
     tools {
-        jdk 'JDK'
+        jdk 'jdk'
         nodejs 'nodejs'
     }
     environment  {
@@ -17,7 +17,7 @@ pipeline {
         }
         stage('Checkout from Git') {
             steps {
-                git credentialsId:'git-priyesh' ,url:'https://github.com/PriyeshPandey07/New-sonarqube-pipeline-project.git',branch:'main'
+                git credentialsId:'git' ,url:'https://github.com/PriyeshPandey07/New-sonarqube-pipeline-project.git',branch:'main'
             }
         }
         stage('Sonarqube Analysis') {
@@ -67,7 +67,7 @@ pipeline {
         stage("ImagePush") {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'docker-priyesh', usernameVariable: 'docker_user', passwordVariable: 'docker_pass')]) {
+                    withCredentials([usernamePassword(credentialsId: 'docker', usernameVariable: 'docker_user', passwordVariable: 'docker_pass')]) {
                     sh "docker tag eventsonarci ${env.docker_user}/eventsonarci:${BUILD_NUMBER}"
                     sh "docker login -u ${env.docker_user} -p ${env.docker_pass}"
                     sh "docker push ${env.docker_user}/eventsonarci:${BUILD_NUMBER}"
