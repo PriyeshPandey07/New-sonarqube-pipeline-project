@@ -17,7 +17,7 @@ pipeline {
         }
         stage('Checkout from Git') {
             steps {
-                git credentialsId:'git' ,url:'https://github.com/PriyeshPandey07/New-sonarqube-pipeline-project.git',branch:'main'
+                git credentialsId:'git' ,url:'https://github.com/PriyeshPandey07/Sonarqube-Appeventor-project-with-pipeline.git',branch:'main'
             }
         }
         stage('Sonarqube Analysis') {
