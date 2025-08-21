@@ -23,7 +23,7 @@ pipeline {
         stage('Sonarqube Analysis') {
             steps {
                 dir('Sonarfolder/') {
-                    withSonarQubeEnv('sonar-scanner') {
+                    withSonarQubeEnv('sonar-server') {
                         sh ''' $SCANNER_HOME/bin/sonar-scanner \
                         -Dsonar.projectName=eventsonar \
                         -Dsonar.projectKey=eventsonar '''
